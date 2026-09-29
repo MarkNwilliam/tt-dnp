@@ -6,7 +6,8 @@
 number plate: a write-once sealed identity, a decrement-only toll balance, and a
 24-byte evidence token a roadside reader can photograph.
 
-PDK `ihp-sg13g2` · 20 ns clock · [Write-up](docs/info.md)
+PDK `ihp-sg13g2` · 20 ns clock · [Write-up](docs/info.md) ·
+[Fab package](gds_output/) · [Render](gds_output/preview.png)
 
 </div>
 
@@ -68,11 +69,37 @@ overload, digest determinism/change, and immobilize on expired tax.
 cd test && make          # 12/12 PASS
 ```
 
+## Silicon (2x2, IHP sg13g2 — all green)
+
+| Metric | Value |
+|---|---|
+| Tiles | 2x2 (die 419.52 x 313.74 um) |
+| Std cells | 4,652 (2,866 logic + 690 sequential) |
+| Utilization | 63.1 % |
+| Core area | 128,155 um^2 (65,675 um^2 of cells) |
+| Setup WNS / TNS | 0.0 / 0.0 ns — **no violations** |
+| Hold WNS / TNS | 0.0 / 0.0 ns — **no violations** |
+| Route DRC | 0 |
+| Antenna violations | 0 |
+| LVS | clean (0 device/net differences) |
+| Magic DRC | 0 errors, 0 illegal overlaps |
+| Power | 2.62 mW total (2.20 internal, 0.42 switching, 0.004 leakage) |
+| IR drop | 0.60 mV worst |
+
+Timing closes at the 20 ns target across all three corners with zero setup
+and zero hold violations, and LVS matches the schematic. `gds_output/` holds
+the GDSII, OASIS, LEF, SPEF and gate-level netlist, plus a rendered preview.
+
+One known issue: **50 max-fanout violations**. These are wide control nets,
+not timing failures — slack is clean at every corner — but they are a real
+signal-integrity smell that would want a buffer tree before a production
+run. Tracked rather than hidden.
+
 ## Status
 
-RTL, wrapper and tests are complete. Physical implementation (GDS) runs in
-GitHub Actions via the `gds` workflow — the fabrication outputs land in
-`gds_output/` once the first green run finishes.
+RTL, wrapper, tests, and physical implementation are complete. GDS, precheck
+and gate-level simulation are all green in GitHub Actions; the fabrication
+package is in `gds_output/`.
 
 ## License
 
