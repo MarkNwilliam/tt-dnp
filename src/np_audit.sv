@@ -11,23 +11,18 @@ module np_audit (
     output wire        chain_bit    // rolling chain accumulator bit
 );
 
-  // 4-entry ring of last events (code 4b + magnitude 4b each), plus a
-  // one-bit rolling chain flag that flips on every event -> swap detection.
-  reg [7:0] ring [0:3];
-  reg [1:0] wptr;
-  reg       chain_q;
+  // A saturating event count plus a rolling chain bit that flips on every
+  // event, so a reader can spot a swapped or replayed evidence log. (An
+  // earlier 4-entry event ring was removed: nothing ever read it back, and
+  // it cost flops for no evidence value.)
+  reg chain_q;
 
-  integer j;
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      log_head  <= 8'd0;
-      wptr      <= 2'd0;
-      chain_q     <= 1'b0;
-      for (j = 0; j < 4; j = j + 1) ring[j] <= 8'd0;
+      log_head <= 8'd0;
+      chain_q  <= 1'b0;
     end else if (!freeze && ev) begin
-      ring[wptr]   <= {ev_code, ev_mag[3:0]};
-      wptr         <= wptr + 2'd1;
-      chain_q        <= ~chain_q;
+      chain_q <= ~chain_q;
       if (log_head != 8'hFF) log_head <= log_head + 8'd1;
     end
   end

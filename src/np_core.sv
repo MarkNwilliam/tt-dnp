@@ -191,9 +191,13 @@ module np_core (
   reg  [4:0]  rcnt;
   reg         rdy;
 
-  reg [7:0] rec_snap [0:23];
+  // The token record is 16 bytes; bytes 16..23 of the digest input are the
+  // sealed serial, which is immutable once sealed (np_id ignores writes after
+  // the seal and tokens are only issued when sealed), so it is fed to the
+  // digest straight from np_id instead of being held in a 24-byte snapshot.
+  reg [7:0] rec_snap [0:15];
 
-  // record bytes 0..15 (+ serial 16..23)
+  // record bytes 0..15 (snapshot) + sealed serial 16..23 (digest tail)
   function automatic [7:0] rec_byte(input [4:0] i);
     begin
       case (i)
@@ -227,10 +231,26 @@ module np_core (
     end
   endfunction
 
+  // sealed serial byte i (i = 0..7), for the digest tail
+  function automatic [7:0] serial_byte(input [2:0] i);
+    begin
+      case (i)
+        3'd0:    serial_byte = serial[63:56];
+        3'd1:    serial_byte = serial[55:48];
+        3'd2:    serial_byte = serial[47:40];
+        3'd3:    serial_byte = serial[39:32];
+        3'd4:    serial_byte = serial[31:24];
+        3'd5:    serial_byte = serial[23:16];
+        3'd6:    serial_byte = serial[15:8];
+        default: serial_byte = serial[7:0];
+      endcase
+    end
+  endfunction
+
   // host token byte (16 record + 8 digest)
   function automatic [7:0] token_byte(input [4:0] i);
     begin
-      if (i < 5'd16) token_byte = rec_snap[i];
+      if (i < 5'd16) token_byte = rec_snap[i[3:0]];
       else begin
         case (i)
           5'd16: token_byte = digest_reg[7:0];
@@ -247,6 +267,10 @@ module np_core (
     end
   endfunction
 
+  // next byte to feed the digest: 16 snapshot bytes, then the 8 serial bytes
+  wire [7:0] feed_byte = (feed < 5'd16) ? rec_snap[feed[3:0]]
+                                        : serial_byte(feed[2:0] - 3'd0);
+
   assign freeze = issuing;
 
   // snapshot capture + digest feed
@@ -255,14 +279,14 @@ module np_core (
     if (!rst_n) begin
       issuing <= 1'b0; feed <= 5'd0; in_valid <= 1'b0; in_byte <= 8'd0;
       digest_reg <= 64'd0; rcnt <= 5'd0; rdy <= 1'b0; dout <= 8'd0;
-      for (k = 0; k < 24; k = k + 1) rec_snap[k] <= 8'h00;
+      for (k = 0; k < 16; k = k + 1) rec_snap[k] <= 8'h00;
     end else begin
       in_valid  <= 1'b0;
       start_reg <= 1'b0;
 
       // start a new token (register the start so the digest sees a clean pulse)
       if (go_p && id_sealed && !issuing && !err) begin
-        for (k = 0; k < 24; k = k + 1) rec_snap[k] <= rec_byte(k[4:0]);
+        for (k = 0; k < 16; k = k + 1) rec_snap[k] <= rec_byte(5'(k[3:0]));
         issuing   <= 1'b1;
         start_reg <= 1'b1;
         feed      <= 5'd0;
@@ -270,9 +294,9 @@ module np_core (
         rcnt      <= 5'd0;
       end
 
-      // feed the 24 snapshot bytes to the digest
+      // feed the 16 snapshot bytes then the 8 sealed serial bytes to the digest
       if (issuing && (feed < 5'd24)) begin
-        in_valid <= 1'b1; in_byte <= rec_snap[feed]; feed <= feed + 5'd1;
+        in_valid <= 1'b1; in_byte <= feed_byte; feed <= feed + 5'd1;
       end
 
       // digest finished -> latch token
