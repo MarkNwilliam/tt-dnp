@@ -2,7 +2,7 @@
 
 #  Digital Number Plate Evidence Core
 
-**Tiny Tapeout 1x2-tile digital core** — the trust anchor for a Ugandan digital
+**Tiny Tapeout 2x2-tile digital core** — the trust anchor for a Ugandan digital
 number plate: a write-once sealed identity, a decrement-only toll balance, and a
 24-byte evidence token a roadside reader can photograph.
 

@@ -12,11 +12,11 @@
   "//": "Here are some of the variables you may want to change:",
 
   "//": "PL_TARGET_DENSITY_PCT - global placement density. The DNP core is a",
-  "//": "1x2-tile design (it carries a 32-byte sealed identity, a toll balance,",
-  "//": "audit counters, tamper latches and a 64-bit digest), so there is room",
-  "//": "to place at a high density. Start at 80; raise it only if the flow",
-  "//": "reports the design is too small for the tile.",
-  "PL_TARGET_DENSITY_PCT": 80,
+  "//": "2x2-tile design (32-byte sealed identity, toll balance, EDR, tamper",
+  "//": "latches, and a 64-bit serial digest), and lands near 57% utilization,",
+  "//": "so there is plenty of room to place. Leave it conservative until a",
+  "//": "run reports a real failure to converge.",
+  "PL_TARGET_DENSITY_PCT": 70,
 
   "//": "CLOCK_PERIOD - Increase this in case you are getting setup time violations.",
   "//": "The value is in nanoseconds, so 20ns == 50MHz.",

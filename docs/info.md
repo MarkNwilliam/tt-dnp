@@ -1,6 +1,6 @@
 # Digital Number Plate Evidence Core — Tiny Tapeout writeup
 
-A 1x2-tile trusted evidence core for a Ugandan digital number plate (DNP): the
+A 2x2-tile trusted evidence core for a Ugandan digital number plate (DNP): the
 chip that makes a plate **unforgeable** and its **toll/road-user balance
 decrement-only**, and that hands a roadside reader a signed-by-construction
 evidence token to photograph.

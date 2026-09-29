@@ -5,7 +5,12 @@ project:
   description:  "Trusted evidence core for a digital number plate: a 32-byte write-once sealed identity (serial + plate string + tax/insurance class), a decrement-only road-user toll balance with passage evidence, a per-token 64-bit tamper-evident digest binding the live record to the sealed identity, sticky tamper/removal latches, axle-overload and speeding evidence, and an immobilize output."
   language:     "SystemVerilog"
   clock_hz:     10000000
-  tiles:        "1x2"
+  # 1x2 was tried first and came in at 115% utilization (65.7k um^2 of
+  # mapped cells vs ~57k um^2 available). The cost is the 64-bit byte-serial
+  # digest: two 64-bit adders plus five 64-bit XOR trees are ~43% of the
+  # cells, and they are combinational datapath, not flops, so trimming
+  # registers barely moved the number. 2x2 places at ~57%.
+  tiles:        "2x2"
   top_module:   "tt_um_dnp"
   source_files:
     - "tt_um_dnp.v"
