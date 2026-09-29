@@ -7,7 +7,7 @@ number plate: a write-once sealed identity, a decrement-only toll balance, and a
 24-byte evidence token a roadside reader can photograph.
 
 PDK `ihp-sg13g2` · 20 ns clock · [Write-up](docs/info.md) ·
-[Fab package](gds_output/) · [Render](gds_output/preview.png)
+[Live 3D layout](https://marknwilliam.github.io/tt-dnp/) · [Fab package](gds_output/) · [Render](gds_output/preview.png)
 
 </div>
 
