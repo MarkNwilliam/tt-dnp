@@ -1,0 +1,52 @@
+project:
+  title:        "Digital Number Plate Evidence Core"
+  author:       "Mark Nkugwa"
+  discord:      "nkugwamarknwilliam"
+  description:  "Trusted evidence core for a digital number plate: a 32-byte write-once sealed identity (serial + plate string + tax/insurance class), a decrement-only road-user toll balance with passage evidence, a per-token 64-bit tamper-evident digest binding the live record to the sealed identity, sticky tamper/removal latches, axle-overload and speeding evidence, and an immobilize output."
+  language:     "SystemVerilog"
+  clock_hz:     10000000
+  tiles:        "1x2"
+  top_module:   "tt_um_dnp"
+  source_files:
+    - "tt_um_dnp.v"
+    - "np_core.sv"
+    - "np_id.sv"
+    - "np_toll.sv"
+    - "np_edr.sv"
+    - "np_audit.sv"
+    - "np_tamper.sv"
+    - "np_time.sv"
+    - "np_digest.sv"
+
+pinout:
+  # Dedicated inputs
+  ui[0]: "EN"       # global enable (AND'ed with ena)
+  ui[1]: "GO"       # seal (setup) / issue token (sealed)
+  ui[2]: "WR"       # host mode: write DATA to header; sensor mode: sample sensors
+  ui[3]: "RD"       # host mode: read next token byte from DATA
+  ui[4]: "SEL"      # 0 = host byte-bus mode, 1 = sensor-inject mode
+  ui[5]: "PPS"      # 1 Hz time window
+  ui[6]: "ZONE"     # toll-zone level (enter/exit edge-detected)
+  ui[7]: "TAMPER"   # enclosure/seal broken (active-high level)
+
+  # Dedicated outputs
+  uo[0]: "BUSY"
+  uo[1]: "SEALED"
+  uo[2]: "ERR"
+  uo[3]: "TAMPER_LATCH"
+  uo[4]: "BAL_OK"
+  uo[5]: "IMMOB"
+  uo[6]: "RDY"
+  uo[7]: "VALID"
+
+  # Bidirectional pins
+  uio[0]: "DATA[0]"  # host mode: byte bus bit 0; sensor mode: brake
+  uio[1]: "DATA[1]"  # host mode: byte bus bit 1; sensor mode: wheel
+  uio[2]: "DATA[2]"  # host mode: byte bus bit 2; sensor mode: impact
+  uio[3]: "DATA[3]"  # host mode: byte bus bit 3; sensor mode: weigh axle
+  uio[4]: "DATA[4]"  # host mode: byte bus bit 4; sensor mode: zone enter
+  uio[5]: "DATA[5]"  # host mode: byte bus bit 5; sensor mode: zone exit
+  uio[6]: "DATA[6]"  # host mode: byte bus bit 6; sensor mode: removal shock
+  uio[7]: "DATA[7]"  # host mode: byte bus bit 7; sensor mode: spare
+
+yaml_version: 6
