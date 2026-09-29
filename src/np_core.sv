@@ -34,15 +34,8 @@ module np_core (
 );
 
   // ------------------------------------------------------------------
-  // event codes for the audit ring
+  // host port strobe edge-detect
   // ------------------------------------------------------------------
-  localparam [3:0] EV_PASSAGE = 4'd1;
-  localparam [3:0] EV_BRAKE   = 4'd2;
-  localparam [3:0] EV_IMPACT  = 4'd3;
-  localparam [3:0] EV_WEIGH   = 4'd4;
-  localparam [3:0] EV_TAMPER  = 4'd7;
-
-  // strobe edge-detect for the host port
   reg wr_d, go_d, rd_d;
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin wr_d <= 1'b0; go_d <= 1'b0; rd_d <= 1'b0; end
@@ -55,9 +48,8 @@ module np_core (
   // ------------------------------------------------------------------
   // time
   // ------------------------------------------------------------------
-  wire [15:0] sec;
-  wire        tick_1s;
-  np_time u_time (.clk(clk), .rst_n(rst_n), .pps(pps), .sec(sec), .tick_1s(tick_1s));
+  wire tick_1s;
+  np_time u_time (.clk(clk), .rst_n(rst_n), .pps(pps), .tick_1s(tick_1s));
 
   // ------------------------------------------------------------------
   // identity / header
@@ -102,7 +94,7 @@ module np_core (
   // toll
   // ------------------------------------------------------------------
   wire [23:0] balance;
-  wire [15:0] gate_fee, passages, distance;
+  wire [15:0] gate_fee, passages;
   wire        in_zone, unpaid;
   wire        freeze;        // hold counters while a token is issued
 
@@ -117,7 +109,7 @@ module np_core (
     .zenter(zenter), .zexit(zexit),
     .bal_init(bal_init), .fee_in(gate_fee_in),
     .balance(balance), .gate_fee(gate_fee),
-    .passages(passages), .distance(distance),
+    .passages(passages),
     .in_zone(in_zone), .unpaid(unpaid)
   );
 
@@ -134,21 +126,18 @@ module np_core (
   // ------------------------------------------------------------------
   // EDR / load
   // ------------------------------------------------------------------
-  wire [7:0]  brake_n, impact_n, weigh_n, peak_axles;
-  wire [15:0] odo_km, speed_kmh;
   wire        speeding, overweight;
 
   np_edr u_edr (
     .clk(clk), .rst_n(rst_n), .freeze(freeze),
     .brake_p(brake_p), .wheel_p(wheel_p), .impact_p(impact_p), .weigh_p(weigh_p),
     .zenter(zenter), .zexit(zexit), .tick_1s(tick_1s),
-    .brake_n(brake_n), .impact_n(impact_n), .weigh_n(weigh_n),
-    .peak_axles(peak_axles), .odo_km(odo_km), .speed_kmh(speed_kmh),
     .speeding(speeding), .overweight(overweight)
   );
 
   // ------------------------------------------------------------------
-  // audit event arbitration (priority: tamper > passage > brake > impact > weigh)
+  // audit event (counted + chained; the token carries the count and the
+  // chain bit, so no per-event payload is stored)
   // ------------------------------------------------------------------
   reg tampered_d, removal_d;
   always_ff @(posedge clk or negedge rst_n) begin
@@ -156,24 +145,14 @@ module np_core (
     else begin tampered_d <= tampered; removal_d <= removal; end
   end
   wire tamper_evt = (tampered | removal) & ~(tampered_d | removal_d);
-
   wire passage_evt = zexit & in_zone;
   wire ev_valid = tamper_evt | passage_evt | brake_p | impact_p | weigh_p;
-  reg [3:0] ev_code;
-  always_comb begin
-    if      (tamper_evt)  ev_code = EV_TAMPER;
-    else if (passage_evt) ev_code = EV_PASSAGE;
-    else if (brake_p)     ev_code = EV_BRAKE;
-    else if (impact_p)    ev_code = EV_IMPACT;
-    else                  ev_code = EV_WEIGH;
-  end
 
   wire [7:0] log_head;
   wire       chain_bit;
   np_audit u_audit (
     .clk(clk), .rst_n(rst_n), .freeze(freeze),
-    .ev(ev_valid & ~freeze), .ev_code(ev_code), .ev_mag(8'd0),
-    .tamper_p(1'b0), .sec(sec),
+    .ev(ev_valid & ~freeze),
     .log_head(log_head), .chain_bit(chain_bit)
   );
 

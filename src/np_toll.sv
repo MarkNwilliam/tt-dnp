@@ -7,12 +7,11 @@ module np_toll (
     input  wire        zexit,      // toll zone exit sensor
     input  wire [23:0] bal_init,   // prepaid balance from header, 1/100
     input  wire [15:0] fee_in,     // flat charge per passage from header
-    output reg  [23:0] balance,    // 1/100, decrement-only after seal
-    output reg  [15:0] gate_fee,   // 1/100 per passage
-    output reg  [15:0] passages,   // monotonic passage counter
-    output reg  [15:0] distance,   // zone trips completed (km proxy)
-    output reg         in_zone,
-    output reg         unpaid      // insufficient balance latched
+  output reg  [23:0] balance,    // 1/100, decrement-only after seal
+  output reg  [15:0] gate_fee,   // 1/100 per passage
+  output reg  [15:0] passages,   // monotonic passage counter
+  output reg         in_zone,
+  output reg         unpaid      // insufficient balance latched
 );
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -20,7 +19,6 @@ module np_toll (
       balance   <= 24'd0;
       gate_fee  <= 16'd0;
       passages  <= 16'd0;
-      distance  <= 16'd0;
       in_zone   <= 1'b0;
       unpaid    <= 1'b0;
     end else if (init) begin
@@ -28,7 +26,6 @@ module np_toll (
       balance  <= bal_init;
       gate_fee <= fee_in;
       passages <= 16'd0;
-      distance <= 16'd0;
       in_zone  <= 1'b0;
       unpaid   <= 1'b0;
     end else if (!freeze) begin
@@ -37,7 +34,6 @@ module np_toll (
       end else if (zexit && in_zone) begin
         in_zone <= 1'b0;
         if (passages != 16'hFFFF) passages <= passages + 16'd1;
-        if (distance != 16'hFFFF) distance <= distance + 16'd1;
         if (balance >= {8'd0, gate_fee})
           balance <= balance - {8'd0, gate_fee};
         else

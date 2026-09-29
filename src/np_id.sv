@@ -31,8 +31,13 @@ module np_id (
   //  [16..18] prepaid balance, 1/100 currency (decrement-only after seal)
   //  [19..20] flat toll per passage, 1/100
   //  [21..31] reserved (host should write 0)
+  //
+  // Bytes 21..31 are counted so the "all 32 written" seal gate still holds,
+  // but they are not stored: no output ever reads them, so holding 11 bytes
+  // of flops for them would be pure area.
+  localparam HDR_LAST_USED = 6'd20;
 
-  reg [7:0] hdr [0:31];
+  reg [7:0] hdr [0:20];
   reg       seal;
   reg [5:0] cnt;
 
@@ -41,13 +46,11 @@ module np_id (
     if (!rst_n) begin
       seal <= 1'b0;
       cnt  <= 6'd0;
-      for (i = 0; i < 32; i = i + 1) hdr[i] <= 8'h00;
+      for (i = 0; i <= HDR_LAST_USED; i = i + 1) hdr[i] <= 8'h00;
     end else begin
       if (wr_p && !seal) begin
-        if (cnt < 6'd32) begin
-          hdr[cnt[4:0]] <= din;
-          cnt <= cnt + 6'd1;
-        end
+        if (cnt <= HDR_LAST_USED) hdr[cnt[4:0]] <= din;
+        if (cnt < 6'd32) cnt <= cnt + 6'd1;
       end
       if (go && !seal && (cnt == 6'd32)) seal <= 1'b1;
     end
